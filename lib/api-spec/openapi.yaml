@@ -3,20 +3,32 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: AEDC Electricity Token Subscription API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: meters
+    description: Meter management
+  - name: tokens
+    description: Token purchase and history
+  - name: wallet
+    description: Wallet operations
+  - name: subscriptions
+    description: Auto-buy subscriptions
+  - name: dashboard
+    description: Dashboard summary
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +36,464 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── Auth ───────────────────────────────────────────────────────────────────
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout user
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ─── Meters ─────────────────────────────────────────────────────────────────
+  /meters:
+    get:
+      operationId: listMeters
+      tags: [meters]
+      summary: List all meters for current user
+      responses:
+        "200":
+          description: List of meters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Meter"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createMeter
+      tags: [meters]
+      summary: Add a new meter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMeterBody"
+      responses:
+        "201":
+          description: Meter created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meter"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /meters/{id}:
+    get:
+      operationId: getMeter
+      tags: [meters]
+      summary: Get a meter by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Meter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meter"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateMeter
+      tags: [meters]
+      summary: Update a meter
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeterBody"
+      responses:
+        "200":
+          description: Updated meter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meter"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteMeter
+      tags: [meters]
+      summary: Delete a meter
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── Tokens ──────────────────────────────────────────────────────────────────
+  /tokens:
+    get:
+      operationId: listTokenTransactions
+      tags: [tokens]
+      summary: List token purchase history
+      parameters:
+        - in: query
+          name: meterId
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Token transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TokenTransaction"
+
+  /tokens/purchase:
+    post:
+      operationId: purchaseToken
+      tags: [tokens]
+      summary: Purchase an electricity token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseTokenBody"
+      responses:
+        "201":
+          description: Token purchased
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenTransaction"
+        "400":
+          description: Validation or insufficient balance error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tokens/{id}:
+    get:
+      operationId: getTokenTransaction
+      tags: [tokens]
+      summary: Get a token transaction by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Token transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenTransaction"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── Wallet ──────────────────────────────────────────────────────────────────
+  /wallet:
+    get:
+      operationId: getWallet
+      tags: [wallet]
+      summary: Get wallet balance and info
+      responses:
+        "200":
+          description: Wallet info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+
+  /wallet/topup:
+    post:
+      operationId: topupWallet
+      tags: [wallet]
+      summary: Top up wallet balance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TopupWalletBody"
+      responses:
+        "200":
+          description: Wallet topped up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /wallet/transactions:
+    get:
+      operationId: listWalletTransactions
+      tags: [wallet]
+      summary: List wallet transaction history
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Wallet transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WalletTransaction"
+
+  # ─── Subscriptions ───────────────────────────────────────────────────────────
+  /subscriptions:
+    get:
+      operationId: listSubscriptions
+      tags: [subscriptions]
+      summary: List auto-buy subscriptions
+      responses:
+        "200":
+          description: Subscriptions list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subscription"
+    post:
+      operationId: createSubscription
+      tags: [subscriptions]
+      summary: Create a new auto-buy subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubscriptionBody"
+      responses:
+        "201":
+          description: Subscription created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /subscriptions/{id}:
+    patch:
+      operationId: updateSubscription
+      tags: [subscriptions]
+      summary: Update a subscription (pause/resume or change settings)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSubscriptionBody"
+      responses:
+        "200":
+          description: Updated subscription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteSubscription
+      tags: [subscriptions]
+      summary: Delete a subscription
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── Dashboard ───────────────────────────────────────────────────────────────
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard summary data
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +504,338 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    # ─── Auth Schemas ─────────────────────────────────────────────────────────
+    RegisterBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+      required:
+        - name
+        - email
+        - phone
+        - password
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        walletBalance:
+          type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - phone
+        - walletBalance
+        - createdAt
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+
+    # ─── Meter Schemas ────────────────────────────────────────────────────────
+    Meter:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        meterNumber:
+          type: string
+        meterName:
+          type: string
+        address:
+          type: string
+        tariffType:
+          type: string
+        isDefault:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - meterNumber
+        - meterName
+        - address
+        - tariffType
+        - isDefault
+        - createdAt
+
+    CreateMeterBody:
+      type: object
+      properties:
+        meterNumber:
+          type: string
+        meterName:
+          type: string
+        address:
+          type: string
+        tariffType:
+          type: string
+        isDefault:
+          type: boolean
+      required:
+        - meterNumber
+        - meterName
+        - address
+        - tariffType
+
+    UpdateMeterBody:
+      type: object
+      properties:
+        meterName:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        tariffType:
+          type: ["string", "null"]
+        isDefault:
+          type: ["boolean", "null"]
+
+    # ─── Token Schemas ────────────────────────────────────────────────────────
+    TokenTransaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        meterId:
+          type: integer
+        meterNumber:
+          type: string
+        meterName:
+          type: string
+        amount:
+          type: number
+        token:
+          type: ["string", "null"]
+        units:
+          type: ["number", "null"]
+        status:
+          type: string
+        reference:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - meterId
+        - meterNumber
+        - meterName
+        - amount
+        - status
+        - reference
+        - createdAt
+
+    PurchaseTokenBody:
+      type: object
+      properties:
+        meterId:
+          type: integer
+        amount:
+          type: number
+      required:
+        - meterId
+        - amount
+
+    # ─── Wallet Schemas ───────────────────────────────────────────────────────
+    Wallet:
+      type: object
+      properties:
+        balance:
+          type: number
+        userId:
+          type: integer
+      required:
+        - balance
+        - userId
+
+    TopupWalletBody:
+      type: object
+      properties:
+        amount:
+          type: number
+        paymentMethod:
+          type: string
+        reference:
+          type: ["string", "null"]
+      required:
+        - amount
+        - paymentMethod
+
+    WalletTransaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+        amount:
+          type: number
+        reference:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - type
+        - amount
+        - reference
+        - description
+        - status
+        - createdAt
+
+    # ─── Subscription Schemas ─────────────────────────────────────────────────
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        meterId:
+          type: integer
+        meterNumber:
+          type: string
+        meterName:
+          type: string
+        amount:
+          type: number
+        frequency:
+          type: string
+        isActive:
+          type: boolean
+        nextRunDate:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - meterId
+        - meterNumber
+        - meterName
+        - amount
+        - frequency
+        - isActive
+        - createdAt
+
+    CreateSubscriptionBody:
+      type: object
+      properties:
+        meterId:
+          type: integer
+        amount:
+          type: number
+        frequency:
+          type: string
+        nextRunDate:
+          type: ["string", "null"]
+      required:
+        - meterId
+        - amount
+        - frequency
+
+    UpdateSubscriptionBody:
+      type: object
+      properties:
+        amount:
+          type: ["number", "null"]
+        frequency:
+          type: ["string", "null"]
+        isActive:
+          type: ["boolean", "null"]
+        nextRunDate:
+          type: ["string", "null"]
+
+    # ─── Dashboard Schema ─────────────────────────────────────────────────────
+    DashboardSummary:
+      type: object
+      properties:
+        walletBalance:
+          type: number
+        totalSpent:
+          type: number
+        totalTokensPurchased:
+          type: integer
+        activeSubscriptions:
+          type: integer
+        metersCount:
+          type: integer
+        recentTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TokenTransaction"
+        recentWalletActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/WalletTransaction"
+      required:
+        - walletBalance
+        - totalSpent
+        - totalTokensPurchased
+        - activeSubscriptions
+        - metersCount
+        - recentTransactions
+        - recentWalletActivity
