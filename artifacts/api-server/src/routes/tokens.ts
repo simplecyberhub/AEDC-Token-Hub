@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { db, tokenTransactionsTable, metersTable, usersTable, walletTransactionsTable } from "@workspace/db";
 import { requireAuth, type AuthRequest } from "../middlewares/requireAuth";
@@ -23,7 +23,7 @@ function generateRef(): string {
   return "TXN" + Date.now().toString() + Math.floor(Math.random() * 10000).toString().padStart(4, "0");
 }
 
-router.get("/tokens", async (req: AuthRequest, res): Promise<void> => {
+router.get("/tokens", async (req: AuthRequest, res: Response): Promise<void> => {
   const meterId = req.query.meterId ? parseInt(req.query.meterId as string, 10) : undefined;
   const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
   const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
@@ -53,7 +53,7 @@ router.get("/tokens", async (req: AuthRequest, res): Promise<void> => {
     .offset(offset);
 
   res.json(
-    txns.map((t) => ({
+    txns.map((t: any) => ({
       ...t,
       amount: Number(t.amount),
       units: t.units != null ? Number(t.units) : null,
@@ -62,7 +62,7 @@ router.get("/tokens", async (req: AuthRequest, res): Promise<void> => {
   );
 });
 
-router.post("/tokens/purchase", async (req: AuthRequest, res): Promise<void> => {
+router.post("/tokens/purchase", async (req: AuthRequest, res: Response): Promise<void> => {
   const { meterId, amount } = req.body as { meterId?: number; amount?: number };
 
   if (!meterId || !amount || amount <= 0) {
@@ -148,7 +148,7 @@ router.post("/tokens/purchase", async (req: AuthRequest, res): Promise<void> => 
   });
 });
 
-router.get("/tokens/:id", async (req: AuthRequest, res): Promise<void> => {
+router.get("/tokens/:id", async (req: AuthRequest, res: Response): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw!, 10);
 
