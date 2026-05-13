@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { verifyToken, extractBearerToken } from "../lib/auth";
 
-export interface AuthRequest extends Request {
+export interface AuthRequest<Q = any, B = any, P = any> extends Request<P, any, B, Q> {
   userId?: number;
   userEmail?: string;
 }
