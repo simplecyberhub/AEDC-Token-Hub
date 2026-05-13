@@ -4,13 +4,16 @@
   "files": [],
   "references": [
     {
-      "path": "./lib/db"
+      "path": "./artifacts/api-server"
     },
     {
       "path": "./lib/api-client-react"
     },
     {
       "path": "./lib/api-zod"
+    },
+    {
+      "path": "./lib/db"
     }
   ]
 }
